@@ -14,12 +14,18 @@
 
 package com.naman14.timber.fragments;
 
+
+import android.database.Cursor;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.LoaderManager;
+import android.support.v4.content.CursorLoader;
+import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -31,6 +37,7 @@ import com.naman14.timber.R;
 import com.naman14.timber.activities.BaseActivity;
 import com.naman14.timber.adapters.SongsListAdapter;
 import com.naman14.timber.dataloaders.SongLoader;
+import com.naman14.timber.factories.CursorLoaderFactory;
 import com.naman14.timber.listeners.MusicStateListener;
 import com.naman14.timber.models.Song;
 import com.naman14.timber.utils.PreferencesUtility;
@@ -41,7 +48,7 @@ import com.naman14.timber.widgets.FastScroller;
 import java.util.List;
 
 public class SongsFragment extends Fragment implements MusicStateListener {
-
+    private static final String TAG = "SongsFragment";
     private SongsListAdapter mAdapter;
     private RecyclerView recyclerView;
     private PreferencesUtility mPreferences;
@@ -49,6 +56,8 @@ public class SongsFragment extends Fragment implements MusicStateListener {
     @Override
     public void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        getLoaderManager().initLoader(0, null,
+                mSongLoaderListener);
         mPreferences = PreferencesUtility.getInstance(getActivity());
     }
 
@@ -62,7 +71,7 @@ public class SongsFragment extends Fragment implements MusicStateListener {
         FastScroller fastScroller = (FastScroller) rootView.findViewById(R.id.fastscroller);
         fastScroller.setRecyclerView(recyclerView);
 
-        new loadSongs().execute("");
+//        new loadSongs().execute("");
         ((BaseActivity) getActivity()).setMusicStateListenerListener(this);
 
         return rootView;
@@ -139,19 +148,47 @@ public class SongsFragment extends Fragment implements MusicStateListener {
         }
         return super.onOptionsItemSelected(item);
     }
+    private final LoaderManager.LoaderCallbacks<Cursor> mSongLoaderListener =
+            new LoaderManager.LoaderCallbacks<Cursor>() {
 
-    private class loadSongs extends AsyncTask<String, Void, String> {
+                @Override
+                public CursorLoader onCreateLoader(int id, Bundle args) {
+                    switch (id) {
+                        case 0 :
+                            return CursorLoaderFactory.createSongLoader(getActivity());
+
+                        default:
+                            throw new IllegalStateException(
+                                    "Unrecognized DisplayType " + id);
+                    }
+                }
+
+                @Override
+                public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
+                    if (data == null || data.isClosed()) {
+                        Log.e(TAG, "Failed to load contacts");
+                        return;
+                    }
+                    new loadSongs().execute(data);
+                }
+
+                @Override
+                public void onLoaderReset(Loader<Cursor> loader) {}
+            };
+
+
+    private class loadSongs extends AsyncTask<Cursor, Void, SongsListAdapter> {
 
         @Override
-        protected String doInBackground(String... params) {
+        protected SongsListAdapter doInBackground(Cursor... params) {
             if (getActivity() != null)
-                mAdapter = new SongsListAdapter((AppCompatActivity) getActivity(), SongLoader.getAllSongs(getActivity()), false);
-            return "Executed";
+                mAdapter = new SongsListAdapter((AppCompatActivity) getActivity(), SongLoader.getSongsForCursor(params[0]), false);
+            return mAdapter;
         }
 
         @Override
-        protected void onPostExecute(String result) {
-            recyclerView.setAdapter(mAdapter);
+        protected void onPostExecute(SongsListAdapter result) {
+            recyclerView.setAdapter(result);
             if (getActivity() != null)
                 recyclerView.addItemDecoration(new DividerItemDecoration(getActivity(), DividerItemDecoration.VERTICAL_LIST));
 
