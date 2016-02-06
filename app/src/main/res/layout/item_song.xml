@@ -36,6 +36,7 @@
                 style="@style/TextAppearance.AppCompat.Body1"
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
+                android:fontFamily="sans-serif"
                 android:ellipsize="end"
                 android:singleLine="true"
                 android:textSize="16sp" />
@@ -45,7 +46,8 @@
                 style="@style/TextAppearance.AppCompat.Widget.ActionMode.Subtitle"
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
-                android:ellipsize="end"
+                android:fontFamily="sans-serif-light"
+                                                                                                                                                                                                                                                                                                                                                RAstandroid:ellipsize="end"
                 android:paddingTop="3dp"
                 android:singleLine="true"
                 android:textSize="13sp" />
